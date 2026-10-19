@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check shell scripts
+        run: |
+          sh -n scripts/resolve-version.sh
+          sh -n scripts/install-diplodocus.sh
+          shellcheck scripts/*.sh
+          shfmt -d scripts/*.sh
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/install-diplodocus.ps1), [ref]$null, [ref]$errors)
+          if ($errors) { $errors; exit 1 }
+      - name: Check workflows
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint"
+      - uses: jolars/panache-action@v1
+
+  test-installers:
+    name: Installer tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - run: node --test tests/*.test.mjs
+      - run: npx --yes versionary@1.6.0 verify
+
+  test-action:
+    name: Install (${{ matrix.os }}, ${{ matrix.version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - macos-15-intel
+          - windows-latest
+        version: [latest]
+        include:
+          - os: ubuntu-latest
+            version: "0.4.0"
+          - os: ubuntu-latest
+            version: "v0.4.0"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Diplodocus
+        id: setup
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+      - name: Check installation
+        env:
+          INSTALLED_VERSION: ${{ steps.setup.outputs.version }}
+          REQUESTED_VERSION: ${{ matrix.version }}
+        run: |
+          test -n "$INSTALLED_VERSION"
+          test "$(diplodocus --version)" = "diplodocus $INSTALLED_VERSION"
+          if [ "$REQUESTED_VERSION" != latest ]; then
+            test "$INSTALLED_VERSION" = "${REQUESTED_VERSION#v}"
+          fi
+      - name: Check and build a documentation site
+        run: |
+          diplodocus check --config fixtures/site/diplodocus.toml
+          diplodocus build --config fixtures/site/diplodocus.toml --output site
+          test -f site/index.html
+
+  all-tests-passed:
+    name: All tests passed
+    if: always()
+    needs: [lint, test-installers, test-action]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check previous jobs
+        env:
+          PASSED: ${{ needs.lint.result == 'success' && needs.test-installers.result == 'success' && needs.test-action.result == 'success' }}
+        run: test "$PASSED" = true
+
+  versionary:
+    name: Versionary
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: all-tests-passed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+      - uses: jolars/versionary@v1
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}

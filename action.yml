@@ -1,0 +1,102 @@
+name: "Setup Diplodocus"
+description: "Install a prebuilt Diplodocus CLI for documentation workflows."
+author: "Johan Larsson"
+
+branding:
+  icon: "book-open"
+  color: "green"
+
+inputs:
+  version:
+    description: "Diplodocus version to install: latest or an exact version, with or without v."
+    required: false
+    default: "latest"
+  cache:
+    description: "Cache the installed binary between workflow runs."
+    required: false
+    default: "true"
+  token:
+    description: "GitHub token for release lookup and build provenance verification."
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: "The installed Diplodocus CLI version, without the v prefix."
+    value: ${{ steps.install-unix.outputs.version || steps.install-windows.outputs.version }}
+  cache-hit:
+    description: "Whether the binary was restored from the cache."
+    value: ${{ steps.cache.outputs.cache-hit || 'false' }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Resolve Diplodocus version
+      id: resolve
+      shell: bash
+      env:
+        DIPLODOCUS_VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: sh "$GITHUB_ACTION_PATH/scripts/resolve-version.sh"
+
+    - name: Cache Diplodocus binary
+      if: inputs.cache == 'true'
+      id: cache
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.resolve.outputs.install-dir }}
+        key: setup-diplodocus-v1-${{ steps.resolve.outputs.version }}-${{ steps.resolve.outputs.target }}
+
+    - name: Install Diplodocus (Unix)
+      if: runner.os != 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        DIPLODOCUS_VERSION: ${{ steps.resolve.outputs.version }}
+        DIPLODOCUS_ASSET: ${{ steps.resolve.outputs.asset }}
+        DIPLODOCUS_INSTALL_DIR: ${{ steps.resolve.outputs.install-dir }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: sh "$GITHUB_ACTION_PATH/scripts/install-diplodocus.sh"
+
+    - name: Install Diplodocus (Windows)
+      if: runner.os == 'Windows' && steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      env:
+        DIPLODOCUS_VERSION: ${{ steps.resolve.outputs.version }}
+        DIPLODOCUS_ASSET: ${{ steps.resolve.outputs.asset }}
+        DIPLODOCUS_INSTALL_DIR: ${{ steps.resolve.outputs.install-dir }}
+        GH_TOKEN: ${{ inputs.token }}
+      run: '& "$env:GITHUB_ACTION_PATH/scripts/install-diplodocus.ps1"'
+
+    - name: Verify installation and add Diplodocus to PATH (Unix)
+      if: runner.os != 'Windows'
+      id: install-unix
+      shell: bash
+      env:
+        DIPLODOCUS_VERSION: ${{ steps.resolve.outputs.version }}
+        DIPLODOCUS_INSTALL_DIR: ${{ steps.resolve.outputs.install-dir }}
+      run: |
+        version="$("$DIPLODOCUS_INSTALL_DIR/diplodocus" --version)"
+        version="${version#diplodocus }"
+        if [ "$version" != "${DIPLODOCUS_VERSION#v}" ]; then
+          echo "Expected ${DIPLODOCUS_VERSION}, but installed binary reports ${version}" >&2
+          exit 1
+        fi
+        printf '%s\n' "$DIPLODOCUS_INSTALL_DIR" >> "$GITHUB_PATH"
+        printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+    - name: Verify installation and add Diplodocus to PATH (Windows)
+      if: runner.os == 'Windows'
+      id: install-windows
+      shell: pwsh
+      env:
+        DIPLODOCUS_VERSION: ${{ steps.resolve.outputs.version }}
+        DIPLODOCUS_INSTALL_DIR: ${{ steps.resolve.outputs.install-dir }}
+      run: |
+        $versionLine = & (Join-Path $env:DIPLODOCUS_INSTALL_DIR 'diplodocus.exe') --version
+        if ($LASTEXITCODE -ne 0) { throw 'Could not run the installed Diplodocus binary' }
+        $version = $versionLine -replace '^diplodocus ', ''
+        if ($version -ne $env:DIPLODOCUS_VERSION.TrimStart('v')) {
+          throw "Expected $env:DIPLODOCUS_VERSION, but installed binary reports $version"
+        }
+        Add-Content -Path $env:GITHUB_PATH -Value $env:DIPLODOCUS_INSTALL_DIR
+        Add-Content -Path $env:GITHUB_OUTPUT -Value "version=$version"

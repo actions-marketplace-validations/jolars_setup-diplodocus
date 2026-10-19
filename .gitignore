@@ -1,0 +1,13 @@
+.devenv*
+devenv.local.nix
+devenv.local.yaml
+.direnv/
+.pre-commit-config.yaml
+result
+result-*
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+/site/
+/fixtures/site/.diplodocus/
