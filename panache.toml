@@ -1,4 +1,6 @@
 flavor = "gfm"
+# Versionary generates the changelog and owns its formatting.
+extend-exclude = ["CHANGELOG.md"]
 
 [formatters]
 sh = "shfmt"

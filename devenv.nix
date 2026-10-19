@@ -20,7 +20,7 @@
     panache = {
       enable = true;
       name = "Panache";
-      entry = "${pkgs.panache}/bin/panache format --check";
+      entry = "${pkgs.panache}/bin/panache format --check --force-exclude";
       files = "\\.md$";
     };
   };
