@@ -120,6 +120,7 @@ CI runs installer tests and builds the Markdown fixture on every supported
 runner platform. Versionary manages `version.txt` and `CHANGELOG.md` through
 release PRs. Configure the repository's `RELEASE_TOKEN` secret to allow release
 tags to trigger the workflow that updates floating major and minor action tags.
+Until that secret is configured, CI reports that release automation is pending.
 
 ## License
 

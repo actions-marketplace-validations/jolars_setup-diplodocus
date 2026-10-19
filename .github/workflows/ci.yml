@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Install shell formatter
+        run: |
+          go install mvdan.cc/sh/v3/cmd/shfmt@v3.14.1
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Check shell scripts
         run: |
           sh -n scripts/resolve-version.sh
@@ -113,6 +117,8 @@ jobs:
       contents: write
       pull-requests: write
       issues: write
+    env:
+      RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -120,5 +126,9 @@ jobs:
           fetch-tags: true
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
       - uses: jolars/versionary@v1
+        if: env.RELEASE_TOKEN != ''
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Report pending release configuration
+        if: env.RELEASE_TOKEN == ''
+        run: echo '::notice::Set the RELEASE_TOKEN repository secret to enable Versionary releases.'
