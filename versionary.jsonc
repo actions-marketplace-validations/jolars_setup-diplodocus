@@ -4,5 +4,6 @@
   "review-mode": "pr",
   "release-type": "simple",
   "include-commit-authors": true,
+  "allow-stable-major": true,
   "release-reference-comments": "best-effort"
 }
