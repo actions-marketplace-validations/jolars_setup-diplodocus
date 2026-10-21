@@ -18,7 +18,7 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Install shell formatter
         run: |
           go install mvdan.cc/sh/v3/cmd/shfmt@v3.14.1
@@ -46,7 +46,7 @@ jobs:
     name: Installer tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
@@ -75,7 +75,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Set up the default Diplodocus version
         if: matrix.version == 'default'
         id: setup-default
@@ -128,7 +128,7 @@ jobs:
     env:
       RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           fetch-tags: true
