@@ -20,17 +20,20 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: jolars/setup-diplodocus@v0
+      - uses: jolars/setup-diplodocus@v1
       - run: diplodocus build --config documentation/diplodocus.toml
 ```
 
 ### Pin the CLI version
 
-The action version and the Diplodocus version are independent. Pin the CLI for
-reproducible builds; both `0.4.0` and `v0.4.0` are accepted.
+Each action release defaults to an exact Diplodocus version, currently `0.5.0`.
+Pin a full action release or its commit SHA and omit `version` to receive CLI
+upgrades through Dependabot action updates. The action and CLI versions are
+independent. Override the default when needed; both `0.4.0` and `v0.4.0` are
+accepted.
 
 ```yaml
-- uses: jolars/setup-diplodocus@v0
+- uses: jolars/setup-diplodocus@v1
   with:
     version: "0.4.0"
 ```
@@ -46,7 +49,7 @@ After your workflow has prepared the project's dependencies, run Diplodocus
 through that environment when extracting APIs or executing Python examples:
 
 ```yaml
-- uses: jolars/setup-diplodocus@v0
+- uses: jolars/setup-diplodocus@v1
   with:
     version: "0.4.0"
 - run: uv sync --locked --project packages/python
@@ -65,7 +68,7 @@ guide](https://diplodocus.cc/installation.html) for requirements.
 
   | Input     | Default        | Description                                                                                |
   | --------- | -------------- | ------------------------------------------------------------------------------------------ |
-  | `version` | `latest`       | Diplodocus version: `latest` or an exact version, with or without `v`.                     |
+  | `version` | `0.5.0`        | Diplodocus version: `latest` or an exact version, with or without `v`.                     |
   | `cache`   | `true`         | Cache the installed binary between workflow runs. Set to `false` to download it each time. |
   | `token`   | `github.token` | GitHub token for release lookup and build provenance verification.                         |
 
@@ -99,6 +102,14 @@ The cache stores the verified binary under a key containing the resolved CLI
 version and target platform. Version resolution happens before cache lookup, so
 `latest` can advance to a new release. Each version has its own installation
 directory, and the action checks the installed CLI version on cache hits too.
+
+## Default CLI updates
+
+The update workflow checks daily for a newer stable Diplodocus release and opens
+a PR updating the exact default in `action.yml` and this README. It also runs
+manually. After that PR merges, Versionary prepares an action release. Consumers
+pinned to a full action release receive the CLI upgrade through Dependabot. The
+workflow uses the existing `RELEASE_TOKEN` so its PR triggers CI.
 
 ## Development and releases
 

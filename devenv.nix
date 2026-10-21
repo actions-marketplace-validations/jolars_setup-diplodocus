@@ -8,6 +8,7 @@
     nodejs
     panache
     powershell
+    python3
     shellcheck
     shfmt
     xz

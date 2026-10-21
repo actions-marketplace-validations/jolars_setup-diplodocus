@@ -1,0 +1,53 @@
+name: Update Diplodocus
+
+on:
+  schedule:
+    - cron: "23 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-diplodocus
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+      - name: Update the default CLI and open a PR
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "$GH_TOKEN" ]; then
+            echo '::error::Set RELEASE_TOKEN to enable CLI update PRs and their CI checks.'
+            exit 1
+          fi
+          DIPLODOCUS_RELEASE="$(gh api repos/jolars/diplodocus/releases/latest --jq .tag_name)"
+          export DIPLODOCUS_RELEASE
+          python3 scripts/update-default.py
+          if git diff --quiet; then
+            exit 0
+          fi
+          branch="update-diplodocus-${DIPLODOCUS_RELEASE}"
+          if [ "$(gh pr list --state all --head "$branch" --json number --jq length)" != 0 ]; then
+            exit 0
+          fi
+          git switch -c "$branch"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add action.yml README.md
+          git commit -m "feat: default to Diplodocus ${DIPLODOCUS_RELEASE}"
+          git push origin "$branch"
+          cat > "$RUNNER_TEMP/pr-body.md" <<'BODY'
+          Update the exact default CLI version to the latest stable Diplodocus release.
+
+          After this change merges, release the action through Versionary so consumers can receive the CLI upgrade through Dependabot. CI exercises the default on every supported runner platform.
+          BODY
+          gh pr create --head "$branch" --title "feat: default to Diplodocus ${DIPLODOCUS_RELEASE}" --body-file "$RUNNER_TEMP/pr-body.md"

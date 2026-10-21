@@ -65,7 +65,7 @@ jobs:
           - macos-latest
           - macos-15-intel
           - windows-latest
-        version: [latest]
+        version: [default, latest]
         include:
           - os: ubuntu-latest
             version: "0.4.0"
@@ -76,18 +76,26 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      - name: Set up the default Diplodocus version
+        if: matrix.version == 'default'
+        id: setup-default
+        uses: ./
       - name: Set up Diplodocus
+        if: matrix.version != 'default'
         id: setup
         uses: ./
         with:
           version: ${{ matrix.version }}
       - name: Check installation
         env:
-          INSTALLED_VERSION: ${{ steps.setup.outputs.version }}
+          INSTALLED_VERSION: ${{ steps.setup-default.outputs.version || steps.setup.outputs.version }}
           REQUESTED_VERSION: ${{ matrix.version }}
         run: |
           test -n "$INSTALLED_VERSION"
           test "$(diplodocus --version)" = "diplodocus $INSTALLED_VERSION"
+          if [ "$REQUESTED_VERSION" = default ]; then
+            REQUESTED_VERSION="$(sed -n 's/^    default: "\([0-9.]*\)"$/\1/p' action.yml)"
+          fi
           if [ "$REQUESTED_VERSION" != latest ]; then
             test "$INSTALLED_VERSION" = "${REQUESTED_VERSION#v}"
           fi
