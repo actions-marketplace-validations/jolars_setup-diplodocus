@@ -26,7 +26,7 @@ jobs:
 
 ### Pin the CLI version
 
-Each action release defaults to an exact Diplodocus version, currently `0.6.0`.
+Each action release defaults to an exact Diplodocus version, currently `0.8.0`.
 Pin a full action release or its commit SHA and omit `version` to receive CLI
 upgrades through Dependabot action updates. The action and CLI versions are
 independent. Override the default when needed; both `0.4.0` and `v0.4.0` are
@@ -70,7 +70,7 @@ guide](https://diplodocus.cc/installation.html) for requirements.
 
   | Input     | Default        | Description                                                                                |
   | --------- | -------------- | ------------------------------------------------------------------------------------------ |
-  | `version` | `0.6.0`        | Diplodocus version: `latest` or an exact version, with or without `v`.                     |
+  | `version` | `0.8.0`        | Diplodocus version: `latest` or an exact version, with or without `v`.                     |
   | `cache`   | `true`         | Cache the installed binary between workflow runs. Set to `false` to download it each time. |
   | `token`   | `github.token` | GitHub token for release lookup and build provenance verification.                         |
 
@@ -104,36 +104,6 @@ The cache stores the verified binary under a key containing the resolved CLI
 version and target platform. Version resolution happens before cache lookup, so
 `latest` can advance to a new release. Each version has its own installation
 directory, and the action checks the installed CLI version on cache hits too.
-
-## Default CLI updates
-
-The update workflow checks daily for a newer stable Diplodocus release and opens
-a PR updating the exact default in `action.yml` and this README. It also runs
-manually. After that PR merges, Versionary prepares an action release. Consumers
-pinned to a full action release receive the CLI upgrade through Dependabot. The
-workflow uses the existing `RELEASE_TOKEN` so its PR triggers CI.
-
-## Development and releases
-
-Enter `devenv shell`, then run:
-
-```sh
-sh -n scripts/resolve-version.sh
-sh -n scripts/install-diplodocus.sh
-shellcheck scripts/*.sh
-shfmt -d scripts/*.sh
-actionlint
-node --test tests/*.test.mjs
-panache format --check .
-panache lint .
-npx --yes versionary@1.6.0 verify
-```
-
-CI runs installer tests and builds the Markdown fixture on every supported
-runner platform. Versionary manages `version.txt` and `CHANGELOG.md` through
-release PRs. Configure the repository's `RELEASE_TOKEN` secret to allow release
-tags to trigger the workflow that updates floating major and minor action tags.
-Until that secret is configured, CI reports that release automation is pending.
 
 ## License
 

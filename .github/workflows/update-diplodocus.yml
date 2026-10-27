@@ -48,6 +48,8 @@ jobs:
           cat > "$RUNNER_TEMP/pr-body.md" <<'BODY'
           Update the exact default CLI version to the latest stable Diplodocus release.
 
+          @jolars please review this CLI upgrade.
+
           After this change merges, release the action through Versionary so consumers can receive the CLI upgrade through Dependabot. CI exercises the default on every supported runner platform.
           BODY
           gh pr create --head "$branch" --title "feat: default to Diplodocus ${DIPLODOCUS_RELEASE}" --body-file "$RUNNER_TEMP/pr-body.md"
