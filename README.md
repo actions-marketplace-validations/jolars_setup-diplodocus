@@ -109,9 +109,10 @@ directory, and the action checks the installed CLI version on cache hits too.
 
 The update workflow checks daily for a newer stable Diplodocus release and opens
 a PR updating the exact default in `action.yml` and this README. It also runs
-manually. After that PR merges, Versionary prepares an action release. Consumers
-pinned to a full action release receive the CLI upgrade through Dependabot. The
-workflow uses the existing `RELEASE_TOKEN` so its PR triggers CI.
+manually. Each update PR mentions @jolars for review. After that PR merges,
+Versionary prepares an action release. Consumers pinned to a full action release
+receive the CLI upgrade through Dependabot. The workflow uses the existing
+`RELEASE_TOKEN` so its PR triggers CI.
 
 ## Development and releases
 
