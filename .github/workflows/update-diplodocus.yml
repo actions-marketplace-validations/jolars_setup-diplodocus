@@ -52,4 +52,13 @@ jobs:
 
           After this change merges, release the action through Versionary so consumers can receive the CLI upgrade through Dependabot. CI exercises the default on every supported runner platform.
           BODY
-          gh pr create --head "$branch" --title "feat: default to Diplodocus ${DIPLODOCUS_RELEASE}" --body-file "$RUNNER_TEMP/pr-body.md"
+          replacement_url="$(gh pr create --head "$branch" --title "feat: default to Diplodocus ${DIPLODOCUS_RELEASE}" --body-file "$RUNNER_TEMP/pr-body.md")"
+          gh pr list --state open --limit 1000 --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("update-diplodocus-")) | .number' \
+            > "$RUNNER_TEMP/update-prs.txt"
+          replacement_number="${replacement_url##*/}"
+          while IFS= read -r number; do
+            if [ "$number" != "$replacement_number" ]; then
+              gh pr close "$number" --comment "Superseded by ${replacement_url}, which updates the default CLI to ${DIPLODOCUS_RELEASE}."
+            fi
+          done < "$RUNNER_TEMP/update-prs.txt"
