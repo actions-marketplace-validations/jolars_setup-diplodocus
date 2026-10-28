@@ -29,15 +29,12 @@ jobs:
 Each action release defaults to an exact Diplodocus version, currently `0.10.0`.
 Pin a full action release or its commit SHA and omit `version` to receive CLI
 upgrades through Dependabot action updates. The action and CLI versions are
-independent. Override the default when needed; both `0.4.0` and `v0.4.0` are
-accepted.
-
-Diplodocus 0.6.0 and newer use YAML configuration; older releases use TOML.
+independent.
 
 ```yaml
 - uses: jolars/setup-diplodocus@v1
   with:
-    version: "0.4.0"
+    version: "0.10.0"
 ```
 
 With `version: latest`, the action selects the newest stable release containing
@@ -53,7 +50,7 @@ through that environment when extracting APIs or executing Python examples:
 ```yaml
 - uses: jolars/setup-diplodocus@v1
   with:
-    version: "0.4.0"
+    version: "0.10.0"
 - run: uv sync --locked --project packages/python
 - run: >-
     uv run --no-sync --project packages/python
