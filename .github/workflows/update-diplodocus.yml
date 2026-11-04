@@ -16,7 +16,7 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           token: ${{ secrets.RELEASE_TOKEN || github.token }}
       - name: Update the default CLI and open a PR

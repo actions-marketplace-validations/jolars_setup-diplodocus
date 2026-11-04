@@ -12,7 +12,7 @@ jobs:
     name: Update major/minor tags
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
       - name: Move major/minor tags
         shell: bash
         run: |
